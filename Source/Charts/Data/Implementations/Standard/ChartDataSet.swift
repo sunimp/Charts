@@ -216,63 +216,85 @@ open class ChartDataSet: ChartBaseDataSet
         closestToY yValue: Double,
         rounding: ChartDataSetRounding) -> Int
     {
-        var closest = partitioningIndex { $0.x >= xValue }
-        guard closest < endIndex else { return rounding == .closest ? (endIndex-1) : -1 }
-
-        var closestXValue = self[closest].x
-
-        switch rounding {
-        case .up:
-            // If rounding up, and found x-value is lower than specified x, and we can go upper...
-            if closestXValue < xValue && closest < index(before: endIndex)
-            {
-                formIndex(after: &closest)
+        var low = 0
+        var high = entries.count - 1
+        var closest = high
+        
+        while low < high {
+            let mid = (low + high) / 2
+            
+            let d1 = entries[mid].x - xValue
+            let d2 = entries[mid + 1].x - xValue
+            
+            // 如果是nan的话会卡死在这个循环里
+            if d1.isNaN || d2.isNaN {
+                break
             }
-
-        case .down:
-            // If rounding down, and found x-value is upper than specified x, and we can go lower...
-            if closestXValue > xValue && closest > startIndex
-            {
-                formIndex(before: &closest)
-            }
-
-        case .closest:
-            // The closest value in the beginning of this function
-            // `var closest = partitioningIndex { $0.x >= xValue }`
-            // doesn't guarantee closest rounding method
-            if closest > 0 {
-                let distanceAfter = abs(self[closest].x - xValue)
-                let distanceBefore = abs(self[closest-1].x - xValue)
-                distanceBefore < distanceAfter ? closest -= 1 : ()
-                closestXValue = self[closest].x
-            }
-        }
-
-        // Search by closest to y-value
-        if !yValue.isNaN
-        {
-            while closest > startIndex && self[index(before: closest)].x == closestXValue
-            {
-                formIndex(before: &closest)
-            }
-
-            var closestYValue = self[closest].y
-            var closestYIndex = closest
-
-            while closest < index(before: endIndex)
-            {
-                formIndex(after: &closest)
-                let value = self[closest]
-
-                if value.x != closestXValue { break }
-                if abs(value.y - yValue) <= abs(closestYValue - yValue)
-                {
-                    closestYValue = yValue
-                    closestYIndex = closest
+            
+            let ad1 = abs(d1), ad2 = abs(d2)
+            
+            if ad2 < ad1 {
+                // [m + 1] is closer to xValue
+                // Search in an higher place
+                low = mid + 1
+            } else if ad1 < ad2 {
+                // [m] is closer to xValue
+                // Search in a lower place
+                high = mid
+            } else {
+                // We have multiple sequential x-value with same distance
+                
+                if d1 >= 0.0 {
+                    // Search in a lower place
+                    high = mid
+                } else if d1 < 0.0 {
+                    // Search in an higher place
+                    low = mid + 1
                 }
             }
-
-            closest = closestYIndex
+            
+            closest = high
+        }
+        
+        if closest != -1 {
+            let closestXValue = entries[closest].x
+            
+            if rounding == .up {
+                // If rounding up, and found x-value is lower than specified x, and we can go upper...
+                if closestXValue < xValue && closest < entries.count - 1 {
+                    closest += 1
+                }
+            } else if rounding == .down {
+                // If rounding down, and found x-value is upper than specified x, and we can go lower...
+                if closestXValue > xValue && closest > 0 {
+                    closest -= 1
+                }
+            }
+            
+            // Search by closest to y-value
+            if !yValue.isNaN {
+                while closest > 0 && entries[closest - 1].x == closestXValue {
+                    closest -= 1
+                }
+                
+                var closestYValue = entries[closest].y
+                var closestYIndex = closest
+                
+                while true {
+                    closest += 1
+                    if closest >= entries.count { break }
+                    
+                    let value = entries[closest]
+                    
+                    if value.x != closestXValue { break }
+                    if abs(value.y - yValue) < abs(closestYValue - yValue) {
+                        closestYValue = yValue
+                        closestYIndex = closest
+                    }
+                }
+                
+                closest = closestYIndex
+            }
         }
         
         return closest
