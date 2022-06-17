@@ -62,9 +62,9 @@ open class ChartViewBase: NSUIView, ChartDataProvider, AnimatorDelegate
             // calculate how many digits are needed
             setupDefaultFormatter(min: data.yMin, max: data.yMax)
 
-            for set in data where set.valueFormatter is DefaultValueFormatter
+            for dataSet in data.dataSets where dataSet.valueFormatter is DefaultValueFormatter
             {
-                set.valueFormatter = defaultValueFormatter
+                dataSet.valueFormatter = defaultValueFormatter
             }
 
             // let the chart know there is new data
