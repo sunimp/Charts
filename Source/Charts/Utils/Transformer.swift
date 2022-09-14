@@ -157,16 +157,16 @@ open class Transformer: NSObject
     
     @objc open var valueToPixelMatrix: CGAffineTransform
     {
-        var result = matrixValueToPx
+        var fixResult = matrixValueToPx
             .concatenating(viewPortHandler.touchMatrix)
             .concatenating(matrixOffset)
-        if result.tx.isNaN || result.tx.isInfinite {
-            result.tx = 0.0
+        if fixResult.tx.isNaN || fixResult.tx.isInfinite {
+            fixResult.tx = 0.0
         }
-        if result.ty.isNaN || result.ty.isInfinite {
-            result.ty = 0.0
+        if fixResult.ty.isNaN || fixResult.ty.isInfinite {
+            fixResult.ty = 0.0
         }
-        return result
+        return fixResult
     }
     
     @objc open var pixelToValueMatrix: CGAffineTransform
