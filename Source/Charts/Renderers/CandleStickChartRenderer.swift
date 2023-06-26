@@ -37,10 +37,11 @@ open class CandleStickChartRenderer: LineScatterCandleRadarRenderer
                                                  withDefaultDescription: "CandleStick Chart")
             accessibleChartElements.append(element)
         }
-
-        for case let set as CandleChartDataSetProtocol in candleData where set.isVisible
-        {
-            drawDataSet(context: context, dataSet: set)
+        
+        for (_, dataSet) in candleData.enumerated() {
+            if let set = dataSet as? CandleChartDataSetProtocol, set.isVisible {
+                drawDataSet(context: context, dataSet: set)
+            }
         }
     }
     
