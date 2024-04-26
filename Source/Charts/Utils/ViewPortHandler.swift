@@ -16,6 +16,8 @@ import CoreGraphics
 @objc(ChartViewPortHandler)
 open class ViewPortHandler: NSObject
 {
+    public typealias TransfomerXModifyBlock = (CGFloat) -> CGFloat
+    
     /// matrix used for touch events
     @objc open private(set) var touchMatrix = CGAffineTransform.identity
 
@@ -48,6 +50,9 @@ open class ViewPortHandler: NSObject
 
     /// current translation (drag / pan) distance on the y-axis
     @objc open private(set) var transY: CGFloat = 0
+    
+    /// transfomer X modified block
+    @objc public var transfomerXModifyBlock: TransfomerXModifyBlock?
 
     /// offset that allows the chart to be dragged over its bounds on the x-axis
     private var transOffsetX: CGFloat = 0
@@ -240,7 +245,12 @@ open class ViewPortHandler: NSObject
         // make sure scale and translation are within their bounds
         limitTransAndScale(matrix: &touchMatrix, content: contentRect)
         
-        chart.setNeedsDisplay()
+        if let block = transfomerXModifyBlock {
+            touchMatrix.tx = block(touchMatrix.tx)
+        }
+        if invalidate {
+            chart.setNeedsDisplay()
+        }
         
         return touchMatrix
     }
